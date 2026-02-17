@@ -1,0 +1,69 @@
+# seed.yaml — Automation Contract for organvm-v-logos/analytics-engine
+# Schema: seed/v1.0
+# Generated: 2026-02-17 (LOGOS Sprint)
+
+schema_version: "1.0"
+organ: V
+organ_name: Public Process
+repo: analytics-engine
+org: organvm-v-logos
+
+metadata:
+  implementation_status: SKELETON
+  tier: standard
+  promotion_status: LOCAL
+  last_validated: "2026-02-17"
+  generated: "2026-02-17"
+  sprint: "LOGOS"
+
+agents:
+  - name: ci
+    trigger: on_push
+    workflow: .github/workflows/ci.yml
+    description: "Continuous integration pipeline"
+  - name: weekly-metrics
+    trigger:
+      schedule: "0 8 * * 1"
+    workflow: .github/workflows/weekly-metrics.yml
+    description: "Weekly engagement metrics collection and aggregation"
+
+produces:
+  - type: engagement-metrics
+    format: json
+    consumers:
+      - organ: ORGAN-V
+        repos: ["public-process"]
+        relationship: "updates-metrics-for"
+  - type: system-engagement-report
+    format: json
+    consumers:
+      - organ: ORGAN-IV
+        repos: ["orchestration-start-here"]
+        relationship: "reports-to"
+  - type: analytics-dashboard
+    format: static-html
+    consumers:
+      - organ: ORGAN-V
+        repos: ["public-process"]
+        relationship: "visualizes-for"
+
+consumes:
+  - type: goatcounter-api
+    source:
+      organ: EXTERNAL
+      repo: "goatcounter.com"
+    trigger:
+      schedule: "0 8 * * 1"
+    description: "Page views, referrers, browser stats from GoatCounter"
+  - type: github-activity
+    source:
+      organ: ALL
+      repo: "*"
+    trigger:
+      schedule: "0 8 * * 1"
+    description: "Git commit counts, PR activity, release events across all organs"
+
+subscriptions:
+  - event: essay.published
+    source: ORGAN-V
+    action: "Record new essay in metrics tracking"
