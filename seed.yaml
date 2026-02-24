@@ -9,10 +9,10 @@ repo: analytics-engine
 org: organvm-v-logos
 
 metadata:
-  implementation_status: SKELETON
+  implementation_status: CANDIDATE
   tier: standard
   promotion_status: LOCAL
-  last_validated: "2026-02-17"
+  last_validated: "2026-02-24"
   generated: "2026-02-17"
   sprint: "LOGOS"
 
