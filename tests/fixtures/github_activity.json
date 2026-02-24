@@ -1,0 +1,22 @@
+{
+  "source": "github",
+  "collected_at": "2026-02-24T08:00:00+00:00",
+  "available": true,
+  "period": {
+    "start": "2026-02-17",
+    "end": "2026-02-24",
+    "days": 7
+  },
+  "totals": {
+    "commits": 47,
+    "prs": 5,
+    "releases": 1
+  },
+  "organ_breakdown": {
+    "I": { "commits": 12, "prs": 1, "releases": 0 },
+    "II": { "commits": 8, "prs": 0, "releases": 0 },
+    "III": { "commits": 15, "prs": 2, "releases": 1 },
+    "IV": { "commits": 7, "prs": 1, "releases": 0 },
+    "V": { "commits": 5, "prs": 1, "releases": 0 }
+  }
+}

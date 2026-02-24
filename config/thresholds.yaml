@@ -1,0 +1,30 @@
+# Alert threshold definitions for analytics-engine
+# These thresholds trigger alerts in system-engagement-report.json
+
+traffic_drop:
+  description: "Weekly views decreased significantly vs previous week"
+  metric: views_delta_pct
+  operator: "<"
+  value: -50
+  severity: warning
+
+zero_traffic:
+  description: "Published essay received zero views in 7-day window"
+  metric: page_views
+  operator: "=="
+  value: 0
+  severity: warning
+
+referrer_anomaly:
+  description: "Single referrer accounts for majority of traffic (potential bot)"
+  metric: referrer_share_pct
+  operator: ">"
+  value: 80
+  severity: info
+
+github_stall:
+  description: "System-wide commits dropped below minimum threshold"
+  metric: total_commits
+  operator: "<"
+  value: 5
+  severity: warning

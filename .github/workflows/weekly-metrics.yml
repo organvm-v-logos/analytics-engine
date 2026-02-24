@@ -1,0 +1,68 @@
+name: Weekly Metrics Collection
+
+on:
+  schedule:
+    - cron: "0 8 * * 1"  # Monday 08:00 UTC
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Number of days to collect"
+        required: false
+        default: "7"
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - name: Collect GoatCounter metrics
+        env:
+          GOATCOUNTER_SITE: ${{ secrets.GOATCOUNTER_SITE }}
+          GOATCOUNTER_TOKEN: ${{ secrets.GOATCOUNTER_TOKEN }}
+        run: |
+          python -m src.goatcounter \
+            --days ${{ github.event.inputs.days || '7' }} \
+            --output data/raw/
+
+      - name: Collect GitHub activity
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python -m src.github_activity \
+            --days ${{ github.event.inputs.days || '7' }} \
+            --output data/raw/
+
+      - name: Aggregate metrics
+        run: |
+          python -m src.aggregator \
+            --input data/raw/ \
+            --output data/ \
+            --history data/history/
+
+      - name: Generate dashboard
+        run: |
+          python -m src.dashboard \
+            --input data/ \
+            --output docs/dashboard/
+
+      - name: Commit updated metrics
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/engagement-metrics.json data/system-engagement-report.json \
+                  data/history/ docs/dashboard/
+          git diff --staged --quiet || git commit -m "chore: update weekly metrics $(date -u +%Y-%m-%d)"
+          git push

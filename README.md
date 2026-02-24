@@ -1,4 +1,4 @@
-[![ORGAN-V: Logos](https://img.shields.io/badge/ORGAN--V-Logos-0d47a1?style=flat-square)](https://github.com/organvm-v-logos) [![CI](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml) [![Tier: Standard](https://img.shields.io/badge/tier-standard-blue?style=flat-square)]() [![Status: Design Document](https://img.shields.io/badge/status-design_document-yellow?style=flat-square)]()
+[![ORGAN-V: Logos](https://img.shields.io/badge/ORGAN--V-Logos-0d47a1?style=flat-square)](https://github.com/organvm-v-logos) [![CI](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml) [![Tier: Standard](https://img.shields.io/badge/tier-standard-blue?style=flat-square)]() [![Status: Initial Implementation](https://img.shields.io/badge/status-initial_implementation-green?style=flat-square)]()
 
 # analytics-engine
 
@@ -6,31 +6,36 @@ _Engagement tracking and audience analytics for the ORGAN-V discourse layer_
 
 ---
 
-> **Status: Design Document**
+> **Status: Initial Implementation**
 >
-> This README describes the **planned architecture** for analytics-engine.
-> No source code has been implemented yet. The repository currently contains
-> only this design document, a seed.yaml contract, an ADR, and CI scaffolding.
-> See [Current State](#current-state) below for what actually exists.
+> The three-stage pipeline (collection → aggregation → visualization) is implemented
+> and passing 71 tests. All three `seed.yaml` produce edges are fulfilled.
+> GoatCounter and GitHub API tokens are optional — the pipeline degrades gracefully
+> when unconfigured, writing `available: false` JSON and exiting 0.
+> See [Current State](#current-state) below for details.
 
 ---
 
 ## Current State
 
-As of 2026-02-23, this repository contains:
+As of 2026-02-24, this repository contains:
 
-- `README.md` — This design document (you are reading it)
-- `seed.yaml` — Automation contract declaring planned data flows (`implementation_status: SKELETON`)
-- `docs/adr/` — Architecture decision records
-- `.github/workflows/ci.yml` — Minimal CI (YAML lint only)
-- `LICENSE` — MIT
-- `CHANGELOG.md` — Changelog (no releases yet)
+- `src/config.py` — Configuration management (env-based, dataclasses, `.configured` checks)
+- `src/goatcounter.py` — GoatCounter API client (stdlib urllib only)
+- `src/github_activity.py` — GitHub activity collector across all 8 ORGANVM orgs
+- `src/aggregator.py` — Metric fusion, trend computation, threshold alerting
+- `src/dashboard.py` — Static HTML dashboard generator (zero-JS, inline SVG)
+- `config/thresholds.yaml` — Alert threshold definitions
+- `tests/` — 71 offline tests (fixture-driven, mocked APIs)
+- `.github/workflows/ci.yml` — Python CI (ruff + pytest, Python 3.10/3.12)
+- `.github/workflows/weekly-metrics.yml` — Monday 08:00 UTC cron pipeline
+- `seed.yaml` — Automation contract (`implementation_status: CANDIDATE`)
 
-**No Python modules exist.** The `goatcounter.py`, `aggregator.py`, and `dashboard.py` components described below are planned but not yet written. The `produces` edges declared in `seed.yaml` (`engagement-metrics`, `system-engagement-report`, `analytics-dashboard`) are not yet produced.
+All three produce edges are now fulfilled: `engagement-metrics.json`, `system-engagement-report.json`, and `docs/dashboard/index.html`.
 
 ---
 
-## Planned Architecture
+## Architecture
 
 ### Overview
 

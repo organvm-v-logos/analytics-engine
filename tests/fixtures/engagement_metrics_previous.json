@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-02-17T08:00:00+00:00",
+  "period": {
+    "start": "2026-02-10",
+    "end": "2026-02-17"
+  },
+  "site_totals": {
+    "page_views": 950,
+    "unique_visitors": 680,
+    "referrer_count": 8
+  },
+  "pages": [
+    {
+      "path": "/essays/meta-system/01-orchestrate/",
+      "title": "Orchestrate: Why Build a System of Systems",
+      "views": 280,
+      "unique_visitors": 195
+    },
+    {
+      "path": "/",
+      "title": "Public Process — Home",
+      "views": 380,
+      "unique_visitors": 290
+    }
+  ],
+  "trends": {
+    "views_delta_pct": null,
+    "visitors_delta_pct": null
+  }
+}

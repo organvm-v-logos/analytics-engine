@@ -1,0 +1,34 @@
+{
+  "hits": [
+    {
+      "path": "/essays/meta-system/01-orchestrate/",
+      "title": "Orchestrate: Why Build a System of Systems",
+      "count": 312,
+      "count_unique": 218
+    },
+    {
+      "path": "/essays/meta-system/02-sovereign-stack/",
+      "title": "The Sovereign Stack: Owning Your Creative Infrastructure",
+      "count": 187,
+      "count_unique": 134
+    },
+    {
+      "path": "/essays/guide/getting-started/",
+      "title": "Getting Started with ORGANVM",
+      "count": 95,
+      "count_unique": 72
+    },
+    {
+      "path": "/",
+      "title": "Public Process — Home",
+      "count": 420,
+      "count_unique": 310
+    },
+    {
+      "path": "/essays/retrospective/first-sprint/",
+      "title": "Retrospective: The First LOGOS Sprint",
+      "count": 63,
+      "count_unique": 48
+    }
+  ]
+}
