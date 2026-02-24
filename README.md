@@ -1,4 +1,4 @@
-[![ORGAN-V: Logos](https://img.shields.io/badge/ORGAN--V-Logos-0d47a1?style=flat-square)](https://github.com/organvm-v-logos) [![CI](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml) [![Tier: Standard](https://img.shields.io/badge/tier-standard-blue?style=flat-square)]()
+[![ORGAN-V: Logos](https://img.shields.io/badge/ORGAN--V-Logos-0d47a1?style=flat-square)](https://github.com/organvm-v-logos) [![CI](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/organvm-v-logos/analytics-engine/actions/workflows/ci.yml) [![Tier: Standard](https://img.shields.io/badge/tier-standard-blue?style=flat-square)]() [![Status: Design Document](https://img.shields.io/badge/status-design_document-yellow?style=flat-square)]()
 
 # analytics-engine
 
@@ -6,7 +6,33 @@ _Engagement tracking and audience analytics for the ORGAN-V discourse layer_
 
 ---
 
-## Overview
+> **Status: Design Document**
+>
+> This README describes the **planned architecture** for analytics-engine.
+> No source code has been implemented yet. The repository currently contains
+> only this design document, a seed.yaml contract, an ADR, and CI scaffolding.
+> See [Current State](#current-state) below for what actually exists.
+
+---
+
+## Current State
+
+As of 2026-02-23, this repository contains:
+
+- `README.md` — This design document (you are reading it)
+- `seed.yaml` — Automation contract declaring planned data flows (`implementation_status: SKELETON`)
+- `docs/adr/` — Architecture decision records
+- `.github/workflows/ci.yml` — Minimal CI (YAML lint only)
+- `LICENSE` — MIT
+- `CHANGELOG.md` — Changelog (no releases yet)
+
+**No Python modules exist.** The `goatcounter.py`, `aggregator.py`, and `dashboard.py` components described below are planned but not yet written. The `produces` edges declared in `seed.yaml` (`engagement-metrics`, `system-engagement-report`, `analytics-dashboard`) are not yet produced.
+
+---
+
+## Planned Architecture
+
+### Overview
 
 analytics-engine is the measurement backbone of ORGAN-V (Logos / Public Process). It exists to answer a deceptively simple question: is anyone reading?
 
