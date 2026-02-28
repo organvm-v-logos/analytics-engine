@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from src.config import GitHubConfig
 from src.github_activity import (
+    collect_activity,
     count_org_events,
     unconfigured_result,
 )
@@ -114,3 +115,32 @@ class TestCountOrgEvents:
         from datetime import date
         counts = count_org_events(config, "organvm-v-logos", date(2026, 2, 17))
         assert counts["releases"] == 1
+
+
+class TestCollectActivity:
+    @patch("src.github_activity.count_org_events")
+    def test_aggregates_across_orgs(self, mock_count):
+        mock_count.return_value = {"commits": 5, "prs": 2, "releases": 1}
+        config = GitHubConfig(token="ghp_test", orgs=["organvm-v-logos", "meta-organvm"])  # allow-secret
+
+        result = collect_activity(config, days=7)
+        assert result["totals"]["commits"] == 10  # 5 per org * 2 orgs
+        assert result["totals"]["prs"] == 4
+        assert result["totals"]["releases"] == 2
+        assert "V" in result["organ_breakdown"]
+        assert "META" in result["organ_breakdown"]
+
+    @patch("src.github_activity.count_org_events")
+    def test_output_structure(self, mock_count):
+        mock_count.return_value = {"commits": 0, "prs": 0, "releases": 0}
+        config = GitHubConfig(token="ghp_test", orgs=["organvm-v-logos"])  # allow-secret
+
+        result = collect_activity(config, days=14)
+        assert result["source"] == "github"
+        assert "collected_at" in result
+        assert result["available"] is True
+        assert result["period"]["days"] == 14
+        assert "start" in result["period"]
+        assert "end" in result["period"]
+        assert "totals" in result
+        assert "organ_breakdown" in result
