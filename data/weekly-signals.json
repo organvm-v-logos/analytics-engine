@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-03-05T04:16:19.655698+00:00",
+  "period": {
+    "start": "2026-02-17",
+    "end": "2026-02-24"
+  },
+  "kpis": {
+    "page_views": 0,
+    "unique_visitors": 0,
+    "views_delta_pct": null,
+    "visitors_delta_pct": null,
+    "tracked_views_ratio_pct": 0.0,
+    "total_commits": 0,
+    "total_prs": 7,
+    "total_releases": 0,
+    "alerts_count": 2
+  },
+  "outcome_progress": {
+    "stranger_tests_completed": {
+      "current": 0,
+      "target": 10,
+      "progress_pct": 0.0
+    },
+    "external_feedback_items": {
+      "current": 0,
+      "target": 3,
+      "progress_pct": 0.0
+    },
+    "external_contributions": {
+      "current": 0,
+      "target": 3,
+      "progress_pct": 0.0
+    },
+    "community_events_hosted": {
+      "current": 0,
+      "target": 1,
+      "progress_pct": 0.0
+    },
+    "revenue_events": {
+      "current": 0,
+      "target": 1,
+      "progress_pct": 0.0
+    }
+  },
+  "highlights": {
+    "strengths": [],
+    "risks": [
+      "UTM attribution coverage is low at 0.0%.",
+      "GitHub commit volume is low (0) for the period.",
+      "2 threshold alert(s) triggered this period."
+    ]
+  },
+  "recommendations": [
+    "Increase UTM-tagged outbound campaigns for all distribution posts.",
+    "Plan one focused implementation sprint to restore throughput.",
+    "Triage alerts and record remediation status in the weekly log."
+  ]
+}

@@ -82,7 +82,7 @@ class TestOrgToOrgan:
 class TestThresholdsConfig:
     def test_load_from_yaml(self):
         config = ThresholdsConfig.from_yaml(THRESHOLDS_YAML)
-        assert len(config.rules) == 4
+        assert len(config.rules) == 5
 
     def test_rule_properties(self):
         config = ThresholdsConfig.from_yaml(THRESHOLDS_YAML)

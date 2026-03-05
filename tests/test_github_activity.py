@@ -121,7 +121,10 @@ class TestCollectActivity:
     @patch("src.github_activity.count_org_events")
     def test_aggregates_across_orgs(self, mock_count):
         mock_count.return_value = {"commits": 5, "prs": 2, "releases": 1}
-        config = GitHubConfig(token="ghp_test", orgs=["organvm-v-logos", "meta-organvm"])  # allow-secret
+        config = GitHubConfig(
+            token="ghp_test",
+            orgs=["organvm-v-logos", "meta-organvm"],
+        )  # allow-secret
 
         result = collect_activity(config, days=7)
         assert result["totals"]["commits"] == 10  # 5 per org * 2 orgs

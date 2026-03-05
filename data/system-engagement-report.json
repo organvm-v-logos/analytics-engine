@@ -1,13 +1,21 @@
 {
-  "generated_at": "2026-03-04T14:21:34.419560+00:00",
+  "generated_at": "2026-03-05T04:16:19.583221+00:00",
   "period": {
-    "start": "2026-02-25",
-    "end": "2026-03-04"
+    "start": "2026-02-17",
+    "end": "2026-02-24"
   },
   "web_engagement": {
     "total_views": 0,
     "total_visitors": 0,
     "top_essay": null
+  },
+  "distribution": {
+    "tracked_views_ratio_pct": 0.0,
+    "tracked_views": 0,
+    "untagged_views": 0,
+    "top_source": null,
+    "sources": {},
+    "campaigns": {}
   },
   "github_activity": {
     "total_commits": 0,
@@ -31,7 +39,7 @@
       },
       "IV": {
         "commits": 0,
-        "prs": 4,
+        "prs": 2,
         "releases": 0
       },
       "V": {
@@ -46,12 +54,12 @@
       },
       "VII": {
         "commits": 0,
-        "prs": 0,
+        "prs": 3,
         "releases": 0
       },
       "META": {
         "commits": 0,
-        "prs": 1,
+        "prs": 0,
         "releases": 0
       }
     }
@@ -63,7 +71,15 @@
       "severity": "warning",
       "current_value": 0,
       "threshold": 5.0,
-      "triggered_at": "2026-03-04T14:21:34.419555+00:00"
+      "triggered_at": "2026-03-05T04:16:19.583215+00:00"
+    },
+    {
+      "rule": "utm_coverage_low",
+      "description": "Less than 60% of views include UTM attribution tags",
+      "severity": "info",
+      "current_value": 0.0,
+      "threshold": 60.0,
+      "triggered_at": "2026-03-05T04:16:19.583218+00:00"
     }
   ]
 }

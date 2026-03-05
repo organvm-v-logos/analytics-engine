@@ -28,3 +28,10 @@ github_stall:
   operator: "<"
   value: 5
   severity: warning
+
+utm_coverage_low:
+  description: "Less than 60% of views include UTM attribution tags"
+  metric: tracked_views_ratio_pct
+  operator: "<"
+  value: 60
+  severity: info

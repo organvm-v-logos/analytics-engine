@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.aggregator import (
     aggregate,
+    build_attribution,
     build_engagement_metrics,
     build_system_report,
     check_thresholds,
@@ -100,6 +101,41 @@ class TestBuildEngagementMetrics:
         result = build_engagement_metrics(gc_data, None)
         assert result["site_totals"]["page_views"] == 0
         assert result["pages"] == []
+        assert result["attribution"]["tracked_views"] == 0
+
+
+class TestBuildAttribution:
+    def test_extracts_utm_source_medium_campaign(self):
+        pages = [
+            {
+                "path": "/essay-a/?utm_source=github&utm_medium=social&utm_campaign=sprint-1",
+                "count": 100,
+                "count_unique": 80,
+            },
+            {
+                "path": "/essay-b/?utm_source=github&utm_campaign=sprint-1",
+                "count": 25,
+                "count_unique": 20,
+            },
+            {
+                "path": "/essay-c/",
+                "count": 50,
+                "count_unique": 40,
+            },
+        ]
+        result = build_attribution(pages)
+        assert result["tracked_views"] == 125
+        assert result["untagged_views"] == 50
+        assert result["by_source"]["github"] == 125
+        assert result["by_campaign"]["sprint-1"] == 125
+        assert result["by_medium"]["social"] == 100
+        assert result["tracked_views_ratio_pct"] == 71.4
+
+    def test_empty_pages(self):
+        result = build_attribution([])
+        assert result["tracked_views"] == 0
+        assert result["tracked_views_ratio_pct"] == 0.0
+        assert result["by_source"] == {}
 
 
 class TestBuildSystemReport:
@@ -119,6 +155,7 @@ class TestBuildSystemReport:
         assert report["github_activity"]["total_commits"] == 47
         assert "I" in report["github_activity"]["organ_breakdown"]
         assert report["alerts"] == []
+        assert "distribution" in report
 
     def test_no_pages_gives_null_top_essay(self):
         gc_data = {
@@ -188,6 +225,31 @@ class TestCheckThresholds:
         alerts = check_thresholds(thresholds, gc, gh, trends)
         assert len(alerts) == 1
         assert alerts[0]["rule"] == "github_stall"
+
+    def test_utm_coverage_alert(self):
+        thresholds = ThresholdsConfig(rules=[
+            ThresholdRule(
+                name="utm_coverage_low",
+                description="Tracked traffic ratio too low",
+                metric="tracked_views_ratio_pct",
+                operator="<",
+                value=60,
+                severity="info",
+            ),
+        ])
+        gc = {
+            "pages": [
+                {"path": "/a/?utm_source=github", "count": 20, "count_unique": 10},
+                {"path": "/b/", "count": 80, "count_unique": 40},
+            ],
+            "available": True,
+        }
+        gh = {"totals": {"commits": 10}}
+        trends = {}
+
+        alerts = check_thresholds(thresholds, gc, gh, trends)
+        assert len(alerts) == 1
+        assert alerts[0]["rule"] == "utm_coverage_low"
 
 
 class TestSaveToHistory:

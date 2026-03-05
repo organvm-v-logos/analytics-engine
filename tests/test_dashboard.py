@@ -5,6 +5,7 @@ from pathlib import Path
 
 from src.dashboard import (
     alerts_html,
+    attribution_table_html,
     bar_chart_svg,
     generate_dashboard,
     pages_table_html,
@@ -69,6 +70,18 @@ class TestPagesTableHtml:
         assert html.index("High") < html.index("Low")
 
 
+class TestAttributionTableHtml:
+    def test_renders_sources_and_campaigns(self):
+        html = attribution_table_html({"github": 120, "newsletter": 50}, {"launch": 90})
+        assert "Top Sources" in html
+        assert "github" in html
+        assert "launch" in html
+
+    def test_empty_shows_notice(self):
+        html = attribution_table_html({}, {})
+        assert "No UTM-tagged traffic" in html
+
+
 class TestTrendIndicator:
     def test_positive_trend(self):
         html = trend_indicator(12.3)
@@ -118,6 +131,11 @@ class TestRenderDashboard:
                 "total_views": 1077, "total_visitors": 782,
                 "top_essay": "01-orchestrate",
             },
+            "distribution": {
+                "tracked_views_ratio_pct": 65.0,
+                "sources": {"github": 300},
+                "campaigns": {"sprint-1": 200},
+            },
             "github_activity": {"total_commits": 47, "total_prs": 5, "total_releases": 1,
                                 "organ_breakdown": {"I": {"commits": 12}, "III": {"commits": 15}}},
             "alerts": [],
@@ -126,6 +144,7 @@ class TestRenderDashboard:
         assert "<!DOCTYPE html>" in html
         assert "ORGAN-V Analytics Dashboard" in html
         assert "1,077" in html
+        assert "Tracked Views Ratio" in html
 
     def test_zero_data_shows_notice(self):
         engagement = {
@@ -139,6 +158,7 @@ class TestRenderDashboard:
             "generated_at": "",
             "period": {},
             "web_engagement": {"total_views": 0, "total_visitors": 0, "top_essay": None},
+            "distribution": {"tracked_views_ratio_pct": 0.0, "sources": {}, "campaigns": {}},
             "github_activity": {"total_commits": 0, "total_prs": 0, "total_releases": 0,
                                 "organ_breakdown": {}},
             "alerts": [],
@@ -164,6 +184,7 @@ class TestGenerateDashboard:
             "generated_at": "2026-02-24T08:00:00+00:00",
             "period": {"start": "2026-02-17", "end": "2026-02-24"},
             "web_engagement": {"total_views": 100, "total_visitors": 80, "top_essay": None},
+            "distribution": {"tracked_views_ratio_pct": 0.0, "sources": {}, "campaigns": {}},
             "github_activity": {"total_commits": 10, "total_prs": 2, "total_releases": 0,
                                 "organ_breakdown": {}},
             "alerts": [],
