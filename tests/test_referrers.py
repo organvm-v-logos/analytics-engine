@@ -31,13 +31,19 @@ class TestReferrers:
         assert referrers[0]["name"] == "google.com"
         assert referrers[0]["count"] == 50
 
+    @patch("src.goatcounter.fetch_systems")
+    @patch("src.goatcounter.fetch_browsers")
     @patch("src.goatcounter.fetch_referrers")
     @patch("src.goatcounter.fetch_total_stats")
     @patch("src.goatcounter.fetch_page_hits")
-    def test_collect_metrics_includes_referrers(self, mock_hits, mock_totals, mock_ref):
+    def test_collect_metrics_includes_referrers(
+        self, mock_hits, mock_totals, mock_ref, mock_browsers, mock_systems
+    ):
         mock_hits.return_value = []
         mock_totals.return_value = {"total_count": 100, "total_unique": 80}
         mock_ref.return_value = [{"name": "test.com", "count": 10}]
+        mock_browsers.return_value = [{"name": "Chrome", "count": 50}]
+        mock_systems.return_value = [{"name": "macOS", "count": 50}]
 
         config = GoatCounterConfig(site="test", token="tok_test")
         result = collect_metrics(config, days=7)

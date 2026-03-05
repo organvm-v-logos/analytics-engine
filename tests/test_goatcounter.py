@@ -121,15 +121,21 @@ class TestFetchTotalStats:
 
 
 class TestCollectMetrics:
+    @patch("src.goatcounter.fetch_systems")
+    @patch("src.goatcounter.fetch_browsers")
     @patch("src.goatcounter.fetch_referrers")
     @patch("src.goatcounter.fetch_total_stats")
     @patch("src.goatcounter.fetch_page_hits")
-    def test_builds_complete_result(self, mock_hits, mock_totals, mock_ref):
+    def test_builds_complete_result(
+        self, mock_hits, mock_totals, mock_ref, mock_browsers, mock_systems
+    ):
         mock_hits.return_value = [
             {"path": "/test/", "title": "Test", "count": 100, "count_unique": 80}
         ]
         mock_totals.return_value = {"total_count": 100, "total_unique": 80}
         mock_ref.return_value = [{"name": "ref.com", "count": 10}]
+        mock_browsers.return_value = [{"name": "Chrome", "count": 50}]
+        mock_systems.return_value = [{"name": "macOS", "count": 30}]
 
         config = GoatCounterConfig(site="test", token="tok_test")  # allow-secret
         result = collect_metrics(config, days=7)
@@ -139,3 +145,5 @@ class TestCollectMetrics:
         assert result["site_totals"]["page_views"] == 100
         assert len(result["pages"]) == 1
         assert len(result["referrers"]) == 1
+        assert len(result["browsers"]) == 1
+        assert len(result["systems"]) == 1

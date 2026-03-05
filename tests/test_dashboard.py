@@ -8,12 +8,14 @@ from src.dashboard import (
     alerts_html,
     attribution_table_html,
     bar_chart_svg,
+    browsers_table_html,
     generate_dashboard,
     main,
     pages_table_html,
     referrers_table_html,
     render_dashboard,
     sparkline_svg,
+    systems_table_html,
     trend_indicator,
 )
 
@@ -39,6 +41,32 @@ class TestReferrersTableHtml:
     def test_empty_referrers(self):
         html = referrers_table_html([])
         assert "No referrer data" in html
+
+
+class TestBrowsersTableHtml:
+    def test_generates_table(self):
+        browsers = [{"name": "Chrome", "count": 50}]
+        html = browsers_table_html(browsers)
+        assert "<table>" in html
+        assert "Chrome" in html
+        assert "50" in html
+
+    def test_empty_browsers(self):
+        html = browsers_table_html([])
+        assert "No browser data" in html
+
+
+class TestSystemsTableHtml:
+    def test_generates_table(self):
+        systems = [{"name": "macOS", "count": 40}]
+        html = systems_table_html(systems)
+        assert "<table>" in html
+        assert "macOS" in html
+        assert "40" in html
+
+    def test_empty_systems(self):
+        html = systems_table_html([])
+        assert "No OS data" in html
 
 
 class TestSparklineSvg:

@@ -182,12 +182,50 @@ def referrers_table_html(referrers: list[dict]) -> str:
     )
 
 
+def browsers_table_html(browsers: list[dict]) -> str:
+    """Generate an HTML table of browser metrics."""
+    if not browsers:
+        return '<p class="empty-notice">No browser data available.</p>'
+
+    rows = []
+    for b in sorted(browsers, key=lambda x: x.get("count", 0), reverse=True):
+        name = b.get("name", "Unknown")
+        count = b.get("count", 0)
+        rows.append(f"<tr><td>{name}</td><td class='num'>{count}</td></tr>")
+
+    return (
+        '<table><thead><tr><th>Browser</th><th>Views</th></tr></thead><tbody>'
+        + "".join(rows)
+        + '</tbody></table>'
+    )
+
+
+def systems_table_html(systems: list[dict]) -> str:
+    """Generate an HTML table of system (OS) metrics."""
+    if not systems:
+        return '<p class="empty-notice">No OS data available.</p>'
+
+    rows = []
+    for s in sorted(systems, key=lambda x: x.get("count", 0), reverse=True):
+        name = s.get("name", "Unknown")
+        count = s.get("count", 0)
+        rows.append(f"<tr><td>{name}</td><td class='num'>{count}</td></tr>")
+
+    return (
+        '<table><thead><tr><th>Operating System</th><th>Views</th></tr></thead><tbody>'
+        + "".join(rows)
+        + '</tbody></table>'
+    )
+
+
 def render_dashboard(engagement: dict, report: dict) -> str:
     """Render the full dashboard as a self-contained HTML page."""
     period = engagement.get("period", {})
     totals = engagement.get("site_totals", {})
     pages = engagement.get("pages", [])
     referrers = engagement.get("referrers", [])
+    browsers = engagement.get("browsers", [])
+    systems = engagement.get("systems", [])
     trends = engagement.get("trends", {})
     gh = report.get("github_activity", {})
     dist = report.get("distribution", {})
@@ -227,6 +265,7 @@ def render_dashboard(engagement: dict, report: dict) -> str:
   .trend.neutral {{ color: var(--muted); }}
   section {{ margin-bottom: 2rem; }}
   section h2 {{ color: var(--primary); margin-bottom: 1rem; font-size: 1.2rem; }}
+  .grid-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }}
   table {{ width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }}
   th, td {{ padding: 0.6rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }}
   th {{ background: #f5f5f5; font-size: 0.8rem; text-transform: uppercase; color: var(--muted); }}
@@ -236,6 +275,7 @@ def render_dashboard(engagement: dict, report: dict) -> str:
   .alert-warning {{ background: #fff3e0; border-left: 4px solid #ff9800; }}
   .alert-info {{ background: #e3f2fd; border-left: 4px solid #2196f3; }}
   footer {{ margin-top: 3rem; padding-top: 1rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.8rem; }}
+  @media (max-width: 768px) {{ .grid-2 {{ grid-template-columns: 1fr; }} }}
 </style>
 </head>
 <body>
@@ -274,19 +314,33 @@ def render_dashboard(engagement: dict, report: dict) -> str:
   {pages_table_html(pages)}
 </section>
 
-<section>
-  <h2>Top Referrers</h2>
-  {referrers_table_html(referrers)}
-</section>
+<div class="grid-2">
+  <section>
+    <h2>Top Referrers</h2>
+    {referrers_table_html(referrers)}
+  </section>
+
+  <section>
+    <h2>Distribution Attribution</h2>
+    {attribution_table_html(dist.get("sources", {}), dist.get("campaigns", {}))}
+  </section>
+</div>
+
+<div class="grid-2">
+  <section>
+    <h2>Browsers</h2>
+    {browsers_table_html(browsers)}
+  </section>
+
+  <section>
+    <h2>Operating Systems</h2>
+    {systems_table_html(systems)}
+  </section>
+</div>
 
 <section>
   <h2>Commits by Organ</h2>
   {bar_chart_svg(organ_labels, organ_commits)}
-</section>
-
-<section>
-  <h2>Distribution Attribution</h2>
-  {attribution_table_html(dist.get("sources", {}), dist.get("campaigns", {}))}
 </section>
 
 <section>

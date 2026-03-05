@@ -104,6 +104,34 @@ def fetch_referrers(
     return referrers
 
 
+def fetch_browsers(
+    config: GoatCounterConfig,
+    start: date,
+    end: date,
+) -> list[dict]:
+    """Fetch browsers for the given date range."""
+    params = {"start": start.isoformat(), "end": end.isoformat(), "limit": "50"}
+    data = fetch_api(config, "/stats/browser", params)
+    browsers = []
+    for b in data.get("browsers", []):
+        browsers.append({"name": b.get("name", ""), "count": b.get("count", 0)})
+    return browsers
+
+
+def fetch_systems(
+    config: GoatCounterConfig,
+    start: date,
+    end: date,
+) -> list[dict]:
+    """Fetch systems (OS) for the given date range."""
+    params = {"start": start.isoformat(), "end": end.isoformat(), "limit": "50"}
+    data = fetch_api(config, "/stats/system", params)
+    systems = []
+    for s in data.get("systems", []):
+        systems.append({"name": s.get("name", ""), "count": s.get("count", 0)})
+    return systems
+
+
 def collect_metrics(config: GoatCounterConfig, days: int = 7) -> dict:
     """Collect all GoatCounter metrics for the given number of days.
 
@@ -115,6 +143,8 @@ def collect_metrics(config: GoatCounterConfig, days: int = 7) -> dict:
     pages = fetch_page_hits(config, start, end)
     totals = fetch_total_stats(config, start, end)
     referrers = fetch_referrers(config, start, end)
+    browsers = fetch_browsers(config, start, end)
+    systems = fetch_systems(config, start, end)
 
     total_views = sum(p["count"] for p in pages)
     total_unique = sum(p["count_unique"] for p in pages)
@@ -134,8 +164,9 @@ def collect_metrics(config: GoatCounterConfig, days: int = 7) -> dict:
         },
         "pages": pages,
         "referrers": referrers,
+        "browsers": browsers,
+        "systems": systems,
     }
-
 
 def unconfigured_result(days: int = 7) -> dict:
     """Return a placeholder result when GoatCounter is not configured."""
@@ -157,6 +188,8 @@ def unconfigured_result(days: int = 7) -> dict:
         },
         "pages": [],
         "referrers": [],
+        "browsers": [],
+        "systems": [],
     }
 
 

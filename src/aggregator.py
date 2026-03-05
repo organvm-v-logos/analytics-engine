@@ -166,6 +166,8 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
     site_totals = goatcounter_data.get("site_totals", {})
     pages = goatcounter_data.get("pages", [])
     referrers = goatcounter_data.get("referrers", [])
+    browsers = goatcounter_data.get("browsers", [])
+    systems = goatcounter_data.get("systems", [])
     attribution = goatcounter_data.get("attribution") or build_attribution(pages)
 
     prev_totals = (previous or {}).get("site_totals", {})
@@ -200,6 +202,8 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
             for p in pages
         ],
         "referrers": referrers[:10],
+        "browsers": browsers[:10],
+        "systems": systems[:10],
         "trends": {
             "views_delta_pct": compute_trend(site_totals.get("page_views", 0), prev_views),
             "visitors_delta_pct": compute_trend(
