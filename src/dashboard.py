@@ -103,6 +103,34 @@ def pages_table_html(pages: list[dict]) -> str:
     )
 
 
+def attribution_table_html(sources: dict, campaigns: dict) -> str:
+    """Render source/campaign attribution tables."""
+    if not sources and not campaigns:
+        return '<p class="empty-notice">No UTM-tagged traffic captured in this period.</p>'
+
+    source_rows = "".join(
+        f"<tr><td>{source}</td><td class='num'>{views}</td></tr>"
+        for source, views in sources.items()
+    ) or "<tr><td colspan='2'>No source data</td></tr>"
+    campaign_rows = "".join(
+        f"<tr><td>{campaign}</td><td class='num'>{views}</td></tr>"
+        for campaign, views in campaigns.items()
+    ) or "<tr><td colspan='2'>No campaign data</td></tr>"
+
+    return (
+        "<div class='cards'>"
+        "<div class='card'><h3>Top Sources</h3>"
+        "<table><thead><tr><th>Source</th><th>Views</th></tr></thead><tbody>"
+        + source_rows
+        + "</tbody></table></div>"
+        "<div class='card'><h3>Top Campaigns</h3>"
+        "<table><thead><tr><th>Campaign</th><th>Views</th></tr></thead><tbody>"
+        + campaign_rows
+        + "</tbody></table></div>"
+        "</div>"
+    )
+
+
 def trend_indicator(delta_pct: float | None) -> str:
     """Return an HTML string showing trend direction and magnitude."""
     if delta_pct is None:
@@ -139,6 +167,7 @@ def render_dashboard(engagement: dict, report: dict) -> str:
     pages = engagement.get("pages", [])
     trends = engagement.get("trends", {})
     gh = report.get("github_activity", {})
+    dist = report.get("distribution", {})
     report_alerts = report.get("alerts", [])
 
     # Prepare organ bar chart data
@@ -211,6 +240,10 @@ def render_dashboard(engagement: dict, report: dict) -> str:
     <h3>Pull Requests</h3>
     <div class="value">{gh.get("total_prs", 0):,}</div>
   </div>
+  <div class="card">
+    <h3>Tracked Views Ratio</h3>
+    <div class="value">{dist.get("tracked_views_ratio_pct", 0):.1f}%</div>
+  </div>
 </div>
 
 <section>
@@ -221,6 +254,11 @@ def render_dashboard(engagement: dict, report: dict) -> str:
 <section>
   <h2>Commits by Organ</h2>
   {bar_chart_svg(organ_labels, organ_commits)}
+</section>
+
+<section>
+  <h2>Distribution Attribution</h2>
+  {attribution_table_html(dist.get("sources", {}), dist.get("campaigns", {}))}
 </section>
 
 <section>
@@ -266,6 +304,7 @@ def generate_dashboard(input_dir: str, output_dir: str) -> str:
             "generated_at": "",
             "period": {},
             "web_engagement": {"total_views": 0, "total_visitors": 0, "top_essay": None},
+            "distribution": {"tracked_views_ratio_pct": 0.0, "sources": {}, "campaigns": {}},
             "github_activity": {"total_commits": 0, "total_prs": 0, "total_releases": 0,
                                 "organ_breakdown": {}},
             "alerts": [],

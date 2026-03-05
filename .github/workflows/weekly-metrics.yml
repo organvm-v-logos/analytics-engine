@@ -58,11 +58,19 @@ jobs:
             --input data/ \
             --output docs/dashboard/
 
+      - name: Generate weekly signals
+        run: |
+          python -m src.signals \
+            --input data/ \
+            --output data/ \
+            --kpi-config config/outcome-kpis.yaml
+
       - name: Commit updated metrics
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data/engagement-metrics.json data/system-engagement-report.json \
+                  data/weekly-signals.json data/weekly-signals.md \
                   data/history/ docs/dashboard/
           git diff --staged --quiet || git commit -m "chore: update weekly metrics $(date -u +%Y-%m-%d)"
           git push

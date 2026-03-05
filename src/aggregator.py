@@ -13,8 +13,10 @@ import argparse
 import json
 import shutil
 import sys
+from collections import Counter
 from datetime import date, datetime, timezone
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 from src.config import ThresholdsConfig
 
@@ -44,6 +46,57 @@ def compute_trend(current: int | float, previous: int | float | None) -> float |
     return round(((current - previous) / previous) * 100, 1)
 
 
+def build_attribution(pages: list[dict]) -> dict:
+    """Build UTM/source attribution summary from page paths."""
+    total_views = sum(p.get("count", 0) for p in pages)
+    total_unique = sum(p.get("count_unique", 0) for p in pages)
+
+    tracked_views = 0
+    tracked_unique = 0
+    tracked_pages = 0
+    by_source = Counter()
+    by_medium = Counter()
+    by_campaign = Counter()
+
+    for page in pages:
+        path = page.get("path", "")
+        parsed = urlparse(path)
+        query = parse_qs(parsed.query)
+
+        source = (query.get("utm_source", [""])[0] or "").strip().lower()
+        medium = (query.get("utm_medium", [""])[0] or "").strip().lower()
+        campaign = (query.get("utm_campaign", [""])[0] or "").strip().lower()
+
+        views = page.get("count", 0)
+        unique = page.get("count_unique", 0)
+
+        if source or medium or campaign:
+            tracked_pages += 1
+            tracked_views += views
+            tracked_unique += unique
+
+            if source:
+                by_source[source] += views
+            if medium:
+                by_medium[medium] += views
+            if campaign:
+                by_campaign[campaign] += views
+
+    tracked_ratio = round((tracked_views / total_views) * 100, 1) if total_views else 0.0
+
+    return {
+        "tracked_pages": tracked_pages,
+        "tracked_views": tracked_views,
+        "tracked_unique_visitors": tracked_unique,
+        "tracked_views_ratio_pct": tracked_ratio,
+        "untagged_views": max(total_views - tracked_views, 0),
+        "untagged_unique_visitors": max(total_unique - tracked_unique, 0),
+        "by_source": dict(sorted(by_source.items(), key=lambda item: item[1], reverse=True)),
+        "by_medium": dict(sorted(by_medium.items(), key=lambda item: item[1], reverse=True)),
+        "by_campaign": dict(sorted(by_campaign.items(), key=lambda item: item[1], reverse=True)),
+    }
+
+
 def check_thresholds(
     thresholds: ThresholdsConfig,
     goatcounter_data: dict,
@@ -52,10 +105,14 @@ def check_thresholds(
 ) -> list[dict]:
     """Check all threshold rules and return triggered alerts."""
     alerts = []
+    attribution = goatcounter_data.get("attribution") or build_attribution(
+        goatcounter_data.get("pages", [])
+    )
     metric_values = {
         "views_delta_pct": trends.get("views_delta_pct"),
         "visitors_delta_pct": trends.get("visitors_delta_pct"),
         "total_commits": github_data.get("totals", {}).get("commits", 0),
+        "tracked_views_ratio_pct": attribution.get("tracked_views_ratio_pct"),
     }
 
     # Check per-page zero traffic
@@ -107,6 +164,7 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
     period = goatcounter_data.get("period", {})
     site_totals = goatcounter_data.get("site_totals", {})
     pages = goatcounter_data.get("pages", [])
+    attribution = goatcounter_data.get("attribution") or build_attribution(pages)
 
     prev_totals = (previous or {}).get("site_totals", {})
     prev_views = prev_totals.get("page_views")
@@ -140,6 +198,7 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
                 site_totals.get("unique_visitors", 0), prev_visitors
             ),
         },
+        "attribution": attribution,
     }
 
 
@@ -158,6 +217,7 @@ def build_system_report(
 
     site_totals = goatcounter_data.get("site_totals", {})
     pages = goatcounter_data.get("pages", [])
+    attribution = goatcounter_data.get("attribution") or build_attribution(pages)
     top_essay = None
     if pages:
         top_page = max(pages, key=lambda p: p.get("count", 0))
@@ -168,6 +228,9 @@ def build_system_report(
 
     gh_totals = github_data.get("totals", {})
     organ_breakdown = github_data.get("organ_breakdown", {})
+    top_source = None
+    if attribution.get("by_source"):
+        top_source = next(iter(attribution["by_source"].keys()))
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -179,6 +242,14 @@ def build_system_report(
             "total_views": site_totals.get("page_views", 0),
             "total_visitors": site_totals.get("unique_visitors", 0),
             "top_essay": top_essay,
+        },
+        "distribution": {
+            "tracked_views_ratio_pct": attribution.get("tracked_views_ratio_pct", 0.0),
+            "tracked_views": attribution.get("tracked_views", 0),
+            "untagged_views": attribution.get("untagged_views", 0),
+            "top_source": top_source,
+            "sources": attribution.get("by_source", {}),
+            "campaigns": attribution.get("by_campaign", {}),
         },
         "github_activity": {
             "total_commits": gh_totals.get("commits", 0),
@@ -226,6 +297,7 @@ def aggregate(
         "site_totals": {"page_views": 0, "unique_visitors": 0},
         "pages": [],
     }
+    goatcounter_data["attribution"] = build_attribution(goatcounter_data.get("pages", []))
     github_data = load_latest_raw(raw, "github-activity") or {
         "available": False,
         "period": {},

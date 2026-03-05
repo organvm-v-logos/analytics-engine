@@ -1,0 +1,16 @@
+# Manual KPI progress tracking for external outcome metrics.
+# Update weekly before running metrics workflow if manual numbers changed.
+
+targets:
+  stranger_tests_completed: 10
+  external_feedback_items: 3
+  external_contributions: 3
+  community_events_hosted: 1
+  revenue_events: 1
+
+manual_metrics:
+  stranger_tests_completed: 0
+  external_feedback_items: 0
+  external_contributions: 0
+  community_events_hosted: 0
+  revenue_events: 0

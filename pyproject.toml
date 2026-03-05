@@ -16,6 +16,7 @@ dev = ["pytest>=7.0", "ruff>=0.4.0"]
 analytics-collect = "src.goatcounter:main"
 analytics-aggregate = "src.aggregator:main"
 analytics-dashboard = "src.dashboard:main"
+analytics-signals = "src.signals:main"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -25,13 +25,15 @@ As of 2026-02-24, this repository contains:
 - `src/github_activity.py` — GitHub activity collector across all 8 ORGANVM orgs
 - `src/aggregator.py` — Metric fusion, trend computation, threshold alerting
 - `src/dashboard.py` — Static HTML dashboard generator (zero-JS, inline SVG)
+- `src/signals.py` — Weekly KPI + risk/strength signal narrative generator
 - `config/thresholds.yaml` — Alert threshold definitions
+- `config/outcome-kpis.yaml` — Manual progress ledger for human-dependent KPIs
 - `tests/` — 71 offline tests (fixture-driven, mocked APIs)
 - `.github/workflows/ci.yml` — Python CI (ruff + pytest, Python 3.10/3.12)
 - `.github/workflows/weekly-metrics.yml` — Monday 08:00 UTC cron pipeline
 - `seed.yaml` — Automation contract (`implementation_status: CANDIDATE`)
 
-All three produce edges are now fulfilled: `engagement-metrics.json`, `system-engagement-report.json`, and `docs/dashboard/index.html`.
+All three produce edges are now fulfilled: `engagement-metrics.json`, `system-engagement-report.json`, and `docs/dashboard/index.html`. A fourth operating artifact, `data/weekly-signals.{json,md}`, now supports weekly decision loops.
 
 ---
 
@@ -223,8 +225,9 @@ The primary automation runs every Monday at 08:00 UTC via GitHub Actions cron tr
 3. Runs `goatcounter.py` to collect the previous week's web analytics
 4. Runs `aggregator.py` to merge web + GitHub data and produce output artifacts
 5. Runs `dashboard.py` to regenerate the static dashboard
-6. Commits updated metrics and dashboard files back to the repository
-7. Optionally triggers a deployment to update the live dashboard
+6. Runs `signals.py` to produce weekly KPI + recommendation artifacts
+7. Commits updated metrics, signals, and dashboard files back to the repository
+8. Optionally triggers a deployment to update the live dashboard
 
 The workflow can also be triggered manually via `workflow_dispatch` for ad-hoc metric pulls.
 
