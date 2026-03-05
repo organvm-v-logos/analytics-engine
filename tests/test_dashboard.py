@@ -121,6 +121,20 @@ class TestPagesTableHtml:
         # High should appear before Low
         assert html.index("High") < html.index("Low")
 
+    def test_escapes_untrusted_fields(self):
+        pages = [
+            {
+                "path": '/x?<img src=x onerror=alert(1)>',
+                "title": "<script>alert(1)</script>",
+                "views": 1,
+                "unique_visitors": 1,
+            }
+        ]
+        html = pages_table_html(pages)
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+        assert "&lt;img" in html
+
 
 class TestAttributionTableHtml:
     def test_renders_sources_and_campaigns(self):
@@ -132,6 +146,15 @@ class TestAttributionTableHtml:
     def test_empty_shows_notice(self):
         html = attribution_table_html({}, {})
         assert "No UTM-tagged traffic" in html
+
+    def test_escapes_source_and_campaign_names(self):
+        html = attribution_table_html(
+            {"<b>evil</b>": 120},
+            {'"><script>alert(1)</script>': 90},
+        )
+        assert "<script>" not in html
+        assert "&lt;b&gt;evil&lt;/b&gt;" in html
+        assert "&quot;&gt;&lt;script&gt;" in html
 
 
 class TestTrendIndicator:
@@ -165,6 +188,13 @@ class TestAlertsHtml:
     def test_no_alerts(self):
         html = alerts_html([])
         assert "No alerts" in html
+
+    def test_escapes_alert_description_and_normalizes_severity(self):
+        alerts = [{"severity": 'bad" onclick="x', "description": "<img src=x>"}]
+        html = alerts_html(alerts)
+        assert "alert-info" in html
+        assert "<img" not in html
+        assert "&lt;img src=x&gt;" in html
 
 
 class TestRenderDashboard:

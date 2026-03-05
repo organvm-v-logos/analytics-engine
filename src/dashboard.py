@@ -7,9 +7,15 @@ CLI: python -m src.dashboard --input data/ --output docs/dashboard/
 """
 
 import argparse
+import html
 import json
 import sys
 from pathlib import Path
+
+
+def _escape(value) -> str:
+    """Escape untrusted text for safe HTML rendering."""
+    return html.escape(str(value), quote=True)
 
 
 def sparkline_svg(values: list[int | float], width: int = 200, height: int = 40) -> str:
@@ -62,13 +68,15 @@ def bar_chart_svg(
     for i, (label, val) in enumerate(zip(labels, values)):
         y = padding + i * (bar_height + padding)
         bar_w = max(round((val / max_val) * chart_width, 1), 1)
+        safe_label = _escape(label)
+        safe_val = _escape(val)
         bars.append(
             f'<text x="{label_width - 4}" y="{y + bar_height // 2 + 4}" '
-            f'text-anchor="end" fill="#333" font-size="12">{label}</text>'
+            f'text-anchor="end" fill="#333" font-size="12">{safe_label}</text>'
             f'<rect x="{label_width}" y="{y}" width="{bar_w}" height="{bar_height}" '
             f'fill="#0d47a1" rx="3" />'
             f'<text x="{label_width + bar_w + 6}" y="{y + bar_height // 2 + 4}" '
-            f'fill="#666" font-size="11">{val}</text>'
+            f'fill="#666" font-size="11">{safe_val}</text>'
         )
 
     return (
@@ -85,8 +93,10 @@ def pages_table_html(pages: list[dict]) -> str:
 
     rows = []
     for p in sorted(pages, key=lambda x: x.get("views", 0), reverse=True):
-        path = p.get("path", "")
-        title = p.get("title", path)
+        path_raw = p.get("path", "")
+        title_raw = p.get("title", path_raw)
+        path = _escape(path_raw)
+        title = _escape(title_raw)
         views = p.get("views", 0)
         unique = p.get("unique_visitors", 0)
         rows.append(
@@ -108,14 +118,14 @@ def attribution_table_html(sources: dict, campaigns: dict) -> str:
 
     source_rows = (
         "".join(
-            f"<tr><td>{source}</td><td class='num'>{views}</td></tr>"
+            f"<tr><td>{_escape(source)}</td><td class='num'>{views}</td></tr>"
             for source, views in sources.items()
         )
         or "<tr><td colspan='2'>No source data</td></tr>"
     )
     campaign_rows = (
         "".join(
-            f"<tr><td>{campaign}</td><td class='num'>{views}</td></tr>"
+            f"<tr><td>{_escape(campaign)}</td><td class='num'>{views}</td></tr>"
             for campaign, views in campaigns.items()
         )
         or "<tr><td colspan='2'>No campaign data</td></tr>"
@@ -158,8 +168,10 @@ def alerts_html(alerts: list[dict]) -> str:
 
     items = []
     for a in alerts:
-        severity = a.get("severity", "info")
-        desc = a.get("description", a.get("rule", ""))
+        severity = str(a.get("severity", "info")).strip().lower()
+        if severity not in {"warning", "info", "critical"}:
+            severity = "info"
+        desc = _escape(a.get("description", a.get("rule", "")))
         items.append(f'<li class="alert-{severity}">{desc}</li>')
     return '<ul class="alerts">' + "".join(items) + "</ul>"
 
@@ -171,7 +183,7 @@ def referrers_table_html(referrers: list[dict]) -> str:
 
     rows = []
     for r in sorted(referrers, key=lambda x: x.get("count", 0), reverse=True):
-        name = r.get("name", "Unknown")
+        name = _escape(r.get("name", "Unknown"))
         count = r.get("count", 0)
         rows.append(f"<tr><td>{name}</td><td class='num'>{count}</td></tr>")
 
@@ -189,7 +201,7 @@ def browsers_table_html(browsers: list[dict]) -> str:
 
     rows = []
     for b in sorted(browsers, key=lambda x: x.get("count", 0), reverse=True):
-        name = b.get("name", "Unknown")
+        name = _escape(b.get("name", "Unknown"))
         count = b.get("count", 0)
         rows.append(f"<tr><td>{name}</td><td class='num'>{count}</td></tr>")
 
@@ -207,7 +219,7 @@ def systems_table_html(systems: list[dict]) -> str:
 
     rows = []
     for s in sorted(systems, key=lambda x: x.get("count", 0), reverse=True):
-        name = s.get("name", "Unknown")
+        name = _escape(s.get("name", "Unknown"))
         count = s.get("count", 0)
         rows.append(f"<tr><td>{name}</td><td class='num'>{count}</td></tr>")
 
@@ -240,6 +252,10 @@ def render_dashboard(engagement: dict, report: dict) -> str:
     visitors_trend = trend_indicator(trends.get("visitors_delta_pct"))
 
     has_data = totals.get("page_views", 0) > 0 or gh.get("total_commits", 0) > 0
+
+    safe_period_start = _escape(period.get("start", "N/A"))
+    safe_period_end = _escape(period.get("end", "N/A"))
+    safe_generated = _escape(engagement.get("generated_at", "N/A")[:10])
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -280,7 +296,7 @@ def render_dashboard(engagement: dict, report: dict) -> str:
 </head>
 <body>
 <h1>ORGAN-V Analytics Dashboard</h1>
-<p class="subtitle">Period: {period.get("start", "N/A")} to {period.get("end", "N/A")} | Generated: {engagement.get("generated_at", "N/A")[:10]}</p>
+<p class="subtitle">Period: {safe_period_start} to {safe_period_end} | Generated: {safe_generated}</p>
 
 {"" if has_data else '<div class="empty-notice" style="margin-bottom:2rem">No analytics data collected yet. Configure GoatCounter and GitHub tokens to start tracking.</div>'}
 
