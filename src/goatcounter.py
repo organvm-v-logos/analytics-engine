@@ -49,12 +49,14 @@ def fetch_page_hits(
     data = fetch_api(config, "/stats/hits", params)
     pages = []
     for hit in data.get("hits", []):
-        pages.append({
-            "path": hit.get("path", ""),
-            "title": hit.get("title", ""),
-            "count": hit.get("count", 0),
-            "count_unique": hit.get("count_unique", 0),
-        })
+        pages.append(
+            {
+                "path": hit.get("path", ""),
+                "title": hit.get("title", ""),
+                "count": hit.get("count", 0),
+                "count_unique": hit.get("count_unique", 0),
+            }
+        )
     return pages
 
 
@@ -75,6 +77,33 @@ def fetch_total_stats(
     }
 
 
+def fetch_referrers(
+    config: GoatCounterConfig,
+    start: date,
+    end: date,
+) -> list[dict]:
+    """Fetch referrers for the given date range.
+
+    Returns a list of dicts with name, count.
+    """
+    params = {
+        "start": start.isoformat(),
+        "end": end.isoformat(),
+        "limit": "50",
+    }
+    # GoatCounter API for referrers
+    data = fetch_api(config, "/stats/referrers", params)
+    referrers = []
+    for ref in data.get("referrers", []):
+        referrers.append(
+            {
+                "name": ref.get("name", ""),
+                "count": ref.get("count", 0),
+            }
+        )
+    return referrers
+
+
 def collect_metrics(config: GoatCounterConfig, days: int = 7) -> dict:
     """Collect all GoatCounter metrics for the given number of days.
 
@@ -85,6 +114,7 @@ def collect_metrics(config: GoatCounterConfig, days: int = 7) -> dict:
 
     pages = fetch_page_hits(config, start, end)
     totals = fetch_total_stats(config, start, end)
+    referrers = fetch_referrers(config, start, end)
 
     total_views = sum(p["count"] for p in pages)
     total_unique = sum(p["count_unique"] for p in pages)
@@ -103,6 +133,7 @@ def collect_metrics(config: GoatCounterConfig, days: int = 7) -> dict:
             "unique_visitors": totals.get("total_unique", total_unique),
         },
         "pages": pages,
+        "referrers": referrers,
     }
 
 
@@ -125,6 +156,7 @@ def unconfigured_result(days: int = 7) -> dict:
             "unique_visitors": 0,
         },
         "pages": [],
+        "referrers": [],
     }
 
 

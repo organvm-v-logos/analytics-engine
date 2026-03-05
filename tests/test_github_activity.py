@@ -1,13 +1,59 @@
 """Tests for the GitHub activity collector."""
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from src.config import GitHubConfig
 from src.github_activity import (
     collect_activity,
     count_org_events,
+    fetch_github_api,
+    main,
     unconfigured_result,
 )
+
+
+class TestFetchGitHubApi:
+    @patch("urllib.request.urlopen")
+    def test_successful_request(self, mock_urlopen):
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = b'{"test": "ok"}'
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        config = GitHubConfig(token="test")
+        result = fetch_github_api(config, "/test")
+        assert result == {"test": "ok"}
+
+    @patch("urllib.request.urlopen")
+    def test_handles_http_error(self, mock_urlopen):
+        import urllib.error
+
+        mock_urlopen.side_effect = urllib.error.HTTPError("url", 404, "Not Found", {}, None)
+
+        config = GitHubConfig(token="test")
+        try:
+            fetch_github_api(config, "/test")
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+
+
+class TestGithubMain:
+    @patch("src.github_activity.collect_activity")
+    @patch("src.github_activity.GitHubConfig.from_env")
+    @patch("sys.exit")
+    def test_main_runs(self, mock_exit, mock_config, mock_collect, tmp_path):
+        mock_config.return_value = MagicMock(configured=True)
+        mock_collect.return_value = {
+            "totals": {"commits": 10, "prs": 2, "releases": 1},
+            "period": {"end": "2026-03-05"},
+        }
+
+        output_dir = tmp_path / "raw"
+        with patch("sys.argv", ["prog", "--output", str(output_dir)]):
+            main()
+
+        assert (output_dir / "github-activity-2026-03-05.json").exists()
+        mock_exit.assert_called_with(0)
 
 
 class TestUnconfiguredResult:
@@ -41,6 +87,7 @@ class TestCountOrgEvents:
         config = GitHubConfig(token="ghp_test")  # allow-secret
 
         from datetime import date
+
         counts = count_org_events(config, "organvm-v-logos", date(2026, 2, 17))
         assert counts["commits"] == 5
         assert counts["prs"] == 0
@@ -67,6 +114,7 @@ class TestCountOrgEvents:
         config = GitHubConfig(token="ghp_test")  # allow-secret
 
         from datetime import date
+
         counts = count_org_events(config, "organvm-v-logos", date(2026, 2, 17))
         assert counts["prs"] == 2  # only opened + closed count
 
@@ -87,17 +135,20 @@ class TestCountOrgEvents:
         config = GitHubConfig(token="ghp_test")  # allow-secret
 
         from datetime import date
+
         counts = count_org_events(config, "organvm-v-logos", date(2026, 2, 17))
         assert counts["commits"] == 3  # only the one after since date
 
     @patch("src.github_activity.fetch_github_api")
     def test_handles_api_error(self, mock_api):
         import urllib.error
+
         mock_api.side_effect = urllib.error.URLError("Connection refused")
 
         config = GitHubConfig(token="ghp_test")  # allow-secret
 
         from datetime import date
+
         counts = count_org_events(config, "organvm-v-logos", date(2026, 2, 17))
         assert counts == {"commits": 0, "prs": 0, "releases": 0}
 
@@ -113,6 +164,7 @@ class TestCountOrgEvents:
         config = GitHubConfig(token="ghp_test")  # allow-secret
 
         from datetime import date
+
         counts = count_org_events(config, "organvm-v-logos", date(2026, 2, 17))
         assert counts["releases"] == 1
 

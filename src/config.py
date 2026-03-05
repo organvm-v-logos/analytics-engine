@@ -42,16 +42,18 @@ class GitHubConfig:
 
     token: str = ""  # allow-secret
     base_url: str = "https://api.github.com"
-    orgs: list[str] = field(default_factory=lambda: [
-        "ivviiviivvi",
-        "omni-dromenon-machina",
-        "labores-profani-crux",
-        "organvm-iv-taxis",
-        "organvm-v-logos",
-        "organvm-vi-koinonia",
-        "organvm-vii-kerygma",
-        "meta-organvm",
-    ])
+    orgs: list[str] = field(
+        default_factory=lambda: [
+            "ivviiviivvi",
+            "omni-dromenon-machina",
+            "labores-profani-crux",
+            "organvm-iv-taxis",
+            "organvm-v-logos",
+            "organvm-vi-koinonia",
+            "organvm-vii-kerygma",
+            "meta-organvm",
+        ]
+    )
 
     @property
     def configured(self) -> bool:
@@ -104,14 +106,16 @@ class ThresholdsConfig:
             data = yaml.safe_load(f) or {}
         rules = []
         for name, spec in data.items():
-            rules.append(ThresholdRule(
-                name=name,
-                description=spec.get("description", ""),
-                metric=spec.get("metric", ""),
-                operator=spec.get("operator", ""),
-                value=float(spec.get("value", 0)),
-                severity=spec.get("severity", "warning"),
-            ))
+            rules.append(
+                ThresholdRule(
+                    name=name,
+                    description=spec.get("description", ""),
+                    metric=spec.get("metric", ""),
+                    operator=spec.get("operator", ""),
+                    value=float(spec.get("value", 0)),
+                    severity=spec.get("severity", "warning"),
+                )
+            )
         return cls(rules=rules)
 
     @classmethod

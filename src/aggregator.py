@@ -113,6 +113,7 @@ def check_thresholds(
         "visitors_delta_pct": trends.get("visitors_delta_pct"),
         "total_commits": github_data.get("totals", {}).get("commits", 0),
         "tracked_views_ratio_pct": attribution.get("tracked_views_ratio_pct"),
+        "referrer_share_pct": trends.get("max_referrer_share_pct"),
     }
 
     # Check per-page zero traffic
@@ -122,16 +123,14 @@ def check_thresholds(
     for rule in thresholds.rules:
         if rule.metric == "page_views" and rule.operator == "==" and rule.value == 0:
             if has_zero_traffic and goatcounter_data.get("available", False):
-                alerts.append({
-                    "rule": rule.name,
-                    "description": rule.description,
-                    "severity": rule.severity,
-                    "triggered_at": datetime.now(timezone.utc).isoformat(),
-                })
-            continue
-
-        # Skip referrer_share_pct — not implemented in this scope
-        if rule.metric == "referrer_share_pct":
+                alerts.append(
+                    {
+                        "rule": rule.name,
+                        "description": rule.description,
+                        "severity": rule.severity,
+                        "triggered_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                )
             continue
 
         value = metric_values.get(rule.metric)
@@ -147,14 +146,16 @@ def check_thresholds(
             triggered = True
 
         if triggered:
-            alerts.append({
-                "rule": rule.name,
-                "description": rule.description,
-                "severity": rule.severity,
-                "current_value": value,
-                "threshold": rule.value,
-                "triggered_at": datetime.now(timezone.utc).isoformat(),
-            })
+            alerts.append(
+                {
+                    "rule": rule.name,
+                    "description": rule.description,
+                    "severity": rule.severity,
+                    "current_value": value,
+                    "threshold": rule.value,
+                    "triggered_at": datetime.now(timezone.utc).isoformat(),
+                }
+            )
 
     return alerts
 
@@ -164,11 +165,19 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
     period = goatcounter_data.get("period", {})
     site_totals = goatcounter_data.get("site_totals", {})
     pages = goatcounter_data.get("pages", [])
+    referrers = goatcounter_data.get("referrers", [])
     attribution = goatcounter_data.get("attribution") or build_attribution(pages)
 
     prev_totals = (previous or {}).get("site_totals", {})
     prev_views = prev_totals.get("page_views")
     prev_visitors = prev_totals.get("unique_visitors")
+
+    # Compute max referrer share
+    max_referrer_share = 0.0
+    total_views = site_totals.get("page_views", 0)
+    if total_views > 0 and referrers:
+        max_count = max(r.get("count", 0) for r in referrers)
+        max_referrer_share = round((max_count / total_views) * 100, 1)
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -179,7 +188,7 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
         "site_totals": {
             "page_views": site_totals.get("page_views", 0),
             "unique_visitors": site_totals.get("unique_visitors", 0),
-            "referrer_count": 0,
+            "referrer_count": len(referrers),
         },
         "pages": [
             {
@@ -190,13 +199,13 @@ def build_engagement_metrics(goatcounter_data: dict, previous: dict | None) -> d
             }
             for p in pages
         ],
+        "referrers": referrers[:10],
         "trends": {
-            "views_delta_pct": compute_trend(
-                site_totals.get("page_views", 0), prev_views
-            ),
+            "views_delta_pct": compute_trend(site_totals.get("page_views", 0), prev_views),
             "visitors_delta_pct": compute_trend(
                 site_totals.get("unique_visitors", 0), prev_visitors
             ),
+            "max_referrer_share_pct": max_referrer_share,
         },
         "attribution": attribution,
     }
@@ -335,9 +344,7 @@ def aggregate(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Aggregate raw metrics into engagement reports"
-    )
+    parser = argparse.ArgumentParser(description="Aggregate raw metrics into engagement reports")
     parser.add_argument("--input", required=True, help="Input directory with raw JSON files")
     parser.add_argument("--output", required=True, help="Output directory for aggregated JSON")
     parser.add_argument("--history", default="data/history", help="History directory for trends")

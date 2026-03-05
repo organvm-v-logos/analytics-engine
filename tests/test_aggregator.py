@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 from src.aggregator import (
     aggregate,
@@ -12,11 +13,29 @@ from src.aggregator import (
     compute_trend,
     load_latest_raw,
     load_previous_metrics,
+    main,
     save_to_history,
 )
 from src.config import ThresholdRule, ThresholdsConfig
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+class TestAggregatorMain:
+    @patch("src.aggregator.aggregate")
+    @patch("sys.exit")
+    def test_main_runs(self, mock_exit, mock_aggregate, tmp_path):
+        mock_aggregate.return_value = {
+            "goatcounter_available": True,
+            "github_available": True,
+            "page_count": 5,
+            "alert_count": 0,
+        }
+
+        with patch("sys.argv", ["prog", "--input", "in", "--output", "out"]):
+            main()
+
+        mock_exit.assert_called_with(0)
 
 
 class TestComputeTrend:
@@ -69,9 +88,7 @@ class TestBuildEngagementMetrics:
         gc_data = {
             "period": {"start": "2026-02-17", "end": "2026-02-24"},
             "site_totals": {"page_views": 1077, "unique_visitors": 782},
-            "pages": [
-                {"path": "/test/", "title": "Test", "count": 100, "count_unique": 80}
-            ],
+            "pages": [{"path": "/test/", "title": "Test", "count": 100, "count_unique": 80}],
         }
         result = build_engagement_metrics(gc_data, None)
         assert result["site_totals"]["page_views"] == 1077
@@ -163,8 +180,11 @@ class TestBuildSystemReport:
             "site_totals": {"page_views": 0, "unique_visitors": 0},
             "pages": [],
         }
-        gh_data = {"period": {}, "totals": {"commits": 0, "prs": 0, "releases": 0},
-                   "organ_breakdown": {}}
+        gh_data = {
+            "period": {},
+            "totals": {"commits": 0, "prs": 0, "releases": 0},
+            "organ_breakdown": {},
+        }
         report = build_system_report(gc_data, gh_data, [])
         assert report["web_engagement"]["top_essay"] is None
 
@@ -174,8 +194,11 @@ class TestBuildSystemReport:
             "site_totals": {"page_views": 0, "unique_visitors": 0},
             "pages": [],
         }
-        gh_data = {"period": {}, "totals": {"commits": 0, "prs": 0, "releases": 0},
-                   "organ_breakdown": {}}
+        gh_data = {
+            "period": {},
+            "totals": {"commits": 0, "prs": 0, "releases": 0},
+            "organ_breakdown": {},
+        }
         alerts = [{"rule": "test_alert", "severity": "warning"}]
         report = build_system_report(gc_data, gh_data, alerts)
         assert len(report["alerts"]) == 1
@@ -183,12 +206,18 @@ class TestBuildSystemReport:
 
 class TestCheckThresholds:
     def test_traffic_drop_alert(self):
-        thresholds = ThresholdsConfig(rules=[
-            ThresholdRule(
-                name="traffic_drop", description="Traffic dropped",
-                metric="views_delta_pct", operator="<", value=-50, severity="warning"
-            ),
-        ])
+        thresholds = ThresholdsConfig(
+            rules=[
+                ThresholdRule(
+                    name="traffic_drop",
+                    description="Traffic dropped",
+                    metric="views_delta_pct",
+                    operator="<",
+                    value=-50,
+                    severity="warning",
+                ),
+            ]
+        )
         gc = {"pages": [], "available": True}
         gh = {"totals": {"commits": 10}}
         trends = {"views_delta_pct": -60}
@@ -198,12 +227,18 @@ class TestCheckThresholds:
         assert alerts[0]["rule"] == "traffic_drop"
 
     def test_no_alert_when_above_threshold(self):
-        thresholds = ThresholdsConfig(rules=[
-            ThresholdRule(
-                name="traffic_drop", description="Traffic dropped",
-                metric="views_delta_pct", operator="<", value=-50, severity="warning"
-            ),
-        ])
+        thresholds = ThresholdsConfig(
+            rules=[
+                ThresholdRule(
+                    name="traffic_drop",
+                    description="Traffic dropped",
+                    metric="views_delta_pct",
+                    operator="<",
+                    value=-50,
+                    severity="warning",
+                ),
+            ]
+        )
         gc = {"pages": [], "available": True}
         gh = {"totals": {"commits": 10}}
         trends = {"views_delta_pct": -20}
@@ -212,12 +247,18 @@ class TestCheckThresholds:
         assert len(alerts) == 0
 
     def test_github_stall_alert(self):
-        thresholds = ThresholdsConfig(rules=[
-            ThresholdRule(
-                name="github_stall", description="Low commits",
-                metric="total_commits", operator="<", value=5, severity="warning"
-            ),
-        ])
+        thresholds = ThresholdsConfig(
+            rules=[
+                ThresholdRule(
+                    name="github_stall",
+                    description="Low commits",
+                    metric="total_commits",
+                    operator="<",
+                    value=5,
+                    severity="warning",
+                ),
+            ]
+        )
         gc = {"pages": [], "available": True}
         gh = {"totals": {"commits": 2}}
         trends = {}
@@ -227,16 +268,18 @@ class TestCheckThresholds:
         assert alerts[0]["rule"] == "github_stall"
 
     def test_utm_coverage_alert(self):
-        thresholds = ThresholdsConfig(rules=[
-            ThresholdRule(
-                name="utm_coverage_low",
-                description="Tracked traffic ratio too low",
-                metric="tracked_views_ratio_pct",
-                operator="<",
-                value=60,
-                severity="info",
-            ),
-        ])
+        thresholds = ThresholdsConfig(
+            rules=[
+                ThresholdRule(
+                    name="utm_coverage_low",
+                    description="Tracked traffic ratio too low",
+                    metric="tracked_views_ratio_pct",
+                    operator="<",
+                    value=60,
+                    severity="info",
+                ),
+            ]
+        )
         gc = {
             "pages": [
                 {"path": "/a/?utm_source=github", "count": 20, "count_unique": 10},
@@ -275,7 +318,8 @@ class TestAggregate:
 
         # Set up raw data
         gc_raw = {
-            "source": "goatcounter", "available": True,
+            "source": "goatcounter",
+            "available": True,
             "period": {"start": "2026-02-17", "end": "2026-02-24"},
             "site_totals": {"page_views": 1077, "unique_visitors": 782},
             "pages": [{"path": "/test/", "title": "Test", "count": 100, "count_unique": 80}],

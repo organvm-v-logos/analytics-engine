@@ -8,9 +8,45 @@ from src.config import GoatCounterConfig
 from src.goatcounter import (
     collect_metrics,
     fetch_page_hits,
+    fetch_referrers,
     fetch_total_stats,
+    main,
     unconfigured_result,
 )
+
+
+class TestFetchReferrers:
+    @patch("src.goatcounter.urllib.request.urlopen")
+    def test_parses_referrers(self, mock_urlopen):
+        data = {"referrers": [{"name": "google.com", "count": 10}]}
+        mock_resp = MagicMock()
+        mock_resp.read.return_value = json.dumps(data).encode()
+        mock_resp.__enter__.return_value = mock_resp
+        mock_urlopen.return_value = mock_resp
+
+        config = GoatCounterConfig(site="test", token="tok_test")  # allow-secret
+        from datetime import date
+
+        refs = fetch_referrers(config, date(2026, 2, 17), date(2026, 2, 24))
+        assert len(refs) == 1
+        assert refs[0]["name"] == "google.com"
+
+
+class TestGoatCounterMain:
+    @patch("src.goatcounter.collect_metrics")
+    @patch("src.goatcounter.GoatCounterConfig.from_env")
+    @patch("sys.exit")
+    def test_main_runs(self, mock_exit, mock_config, mock_collect, tmp_path):
+        mock_config.return_value = MagicMock(configured=True)
+        mock_collect.return_value = {"site_totals": {"page_views": 100}}
+
+        output_dir = tmp_path / "raw"
+        with patch("sys.argv", ["prog", "--output", str(output_dir)]):
+            main()
+
+        assert len(list(output_dir.glob("goatcounter-*.json"))) == 1
+        mock_exit.assert_called_with(0)
+
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -46,6 +82,7 @@ class TestFetchPageHits:
         config = GoatCounterConfig(site="test", token="tok_test")  # allow-secret
 
         from datetime import date
+
         pages = fetch_page_hits(config, date(2026, 2, 17), date(2026, 2, 24))
 
         assert len(pages) == 5
@@ -59,6 +96,7 @@ class TestFetchPageHits:
         config = GoatCounterConfig(site="test", token="tok_test")  # allow-secret
 
         from datetime import date
+
         pages = fetch_page_hits(config, date(2026, 2, 17), date(2026, 2, 24))
         assert pages == []
 
@@ -76,19 +114,22 @@ class TestFetchTotalStats:
         config = GoatCounterConfig(site="test", token="tok_test")  # allow-secret
 
         from datetime import date
+
         totals = fetch_total_stats(config, date(2026, 2, 17), date(2026, 2, 24))
         assert totals["total_count"] == 1077
         assert totals["total_unique"] == 782
 
 
 class TestCollectMetrics:
+    @patch("src.goatcounter.fetch_referrers")
     @patch("src.goatcounter.fetch_total_stats")
     @patch("src.goatcounter.fetch_page_hits")
-    def test_builds_complete_result(self, mock_hits, mock_totals):
+    def test_builds_complete_result(self, mock_hits, mock_totals, mock_ref):
         mock_hits.return_value = [
             {"path": "/test/", "title": "Test", "count": 100, "count_unique": 80}
         ]
         mock_totals.return_value = {"total_count": 100, "total_unique": 80}
+        mock_ref.return_value = [{"name": "ref.com", "count": 10}]
 
         config = GoatCounterConfig(site="test", token="tok_test")  # allow-secret
         result = collect_metrics(config, days=7)
@@ -97,3 +138,4 @@ class TestCollectMetrics:
         assert result["available"] is True
         assert result["site_totals"]["page_views"] == 100
         assert len(result["pages"]) == 1
+        assert len(result["referrers"]) == 1

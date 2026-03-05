@@ -1,12 +1,24 @@
 """Tests for weekly signals generation."""
 
 import json
+from unittest.mock import patch
 
 from src.signals import (
     build_weekly_signals,
     generate_signals,
+    main,
     render_weekly_signals_markdown,
 )
+
+
+class TestSignalsMain:
+    @patch("src.signals.generate_signals")
+    @patch("sys.exit")
+    def test_main_runs(self, mock_exit, mock_gen):
+        mock_gen.return_value = {"json": "out.json", "markdown": "out.md"}
+        with patch("sys.argv", ["prog", "--input", "in", "--output", "out"]):
+            main()
+        mock_exit.assert_called_with(0)
 
 
 class TestBuildWeeklySignals:
@@ -46,8 +58,7 @@ class TestBuildWeeklySignals:
         cfg = {"targets": {}, "manual_metrics": {}}
         signals = build_weekly_signals(engagement, report, cfg)
         assert any(
-            "UTM attribution coverage is low" in item
-            for item in signals["highlights"]["risks"]
+            "UTM attribution coverage is low" in item for item in signals["highlights"]["risks"]
         )
         assert signals["kpis"]["alerts_count"] == 1
         assert len(signals["recommendations"]) > 0
@@ -89,18 +100,22 @@ class TestGenerateSignals:
         inp.mkdir()
 
         (inp / "engagement-metrics.json").write_text(
-            json.dumps({
-                "period": {"start": "2026-03-01", "end": "2026-03-08"},
-                "site_totals": {"page_views": 100, "unique_visitors": 80},
-                "trends": {"views_delta_pct": 2.0, "visitors_delta_pct": 1.0},
-            })
+            json.dumps(
+                {
+                    "period": {"start": "2026-03-01", "end": "2026-03-08"},
+                    "site_totals": {"page_views": 100, "unique_visitors": 80},
+                    "trends": {"views_delta_pct": 2.0, "visitors_delta_pct": 1.0},
+                }
+            )
         )
         (inp / "system-engagement-report.json").write_text(
-            json.dumps({
-                "distribution": {"tracked_views_ratio_pct": 65.0},
-                "github_activity": {"total_commits": 8, "total_prs": 2, "total_releases": 0},
-                "alerts": [],
-            })
+            json.dumps(
+                {
+                    "distribution": {"tracked_views_ratio_pct": 65.0},
+                    "github_activity": {"total_commits": 8, "total_prs": 2, "total_releases": 0},
+                    "alerts": [],
+                }
+            )
         )
         cfg.write_text(
             "targets:\n"

@@ -2,17 +2,43 @@
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 from src.dashboard import (
     alerts_html,
     attribution_table_html,
     bar_chart_svg,
     generate_dashboard,
+    main,
     pages_table_html,
+    referrers_table_html,
     render_dashboard,
     sparkline_svg,
     trend_indicator,
 )
+
+
+class TestDashboardMain:
+    @patch("src.dashboard.generate_dashboard")
+    @patch("sys.exit")
+    def test_main_runs(self, mock_exit, mock_gen):
+        mock_gen.return_value = "docs/dashboard/index.html"
+        with patch("sys.argv", ["prog", "--input", "in", "--output", "out"]):
+            main()
+        mock_exit.assert_called_with(0)
+
+
+class TestReferrersTableHtml:
+    def test_generates_table(self):
+        referrers = [{"name": "google.com", "count": 50}]
+        html = referrers_table_html(referrers)
+        assert "<table>" in html
+        assert "google.com" in html
+        assert "50" in html
+
+    def test_empty_referrers(self):
+        html = referrers_table_html([])
+        assert "No referrer data" in html
 
 
 class TestSparklineSvg:
@@ -48,9 +74,7 @@ class TestBarChartSvg:
 
 class TestPagesTableHtml:
     def test_generates_table(self):
-        pages = [
-            {"path": "/test/", "title": "Test Page", "views": 100, "unique_visitors": 80}
-        ]
+        pages = [{"path": "/test/", "title": "Test Page", "views": 100, "unique_visitors": 80}]
         html = pages_table_html(pages)
         assert "<table>" in html
         assert "Test Page" in html
@@ -128,7 +152,8 @@ class TestRenderDashboard:
             "generated_at": "2026-02-24T08:00:00+00:00",
             "period": {"start": "2026-02-17", "end": "2026-02-24"},
             "web_engagement": {
-                "total_views": 1077, "total_visitors": 782,
+                "total_views": 1077,
+                "total_visitors": 782,
                 "top_essay": "01-orchestrate",
             },
             "distribution": {
@@ -136,8 +161,12 @@ class TestRenderDashboard:
                 "sources": {"github": 300},
                 "campaigns": {"sprint-1": 200},
             },
-            "github_activity": {"total_commits": 47, "total_prs": 5, "total_releases": 1,
-                                "organ_breakdown": {"I": {"commits": 12}, "III": {"commits": 15}}},
+            "github_activity": {
+                "total_commits": 47,
+                "total_prs": 5,
+                "total_releases": 1,
+                "organ_breakdown": {"I": {"commits": 12}, "III": {"commits": 15}},
+            },
             "alerts": [],
         }
         html = render_dashboard(engagement, report)
@@ -159,8 +188,12 @@ class TestRenderDashboard:
             "period": {},
             "web_engagement": {"total_views": 0, "total_visitors": 0, "top_essay": None},
             "distribution": {"tracked_views_ratio_pct": 0.0, "sources": {}, "campaigns": {}},
-            "github_activity": {"total_commits": 0, "total_prs": 0, "total_releases": 0,
-                                "organ_breakdown": {}},
+            "github_activity": {
+                "total_commits": 0,
+                "total_prs": 0,
+                "total_releases": 0,
+                "organ_breakdown": {},
+            },
             "alerts": [],
         }
         html = render_dashboard(engagement, report)
@@ -185,8 +218,12 @@ class TestGenerateDashboard:
             "period": {"start": "2026-02-17", "end": "2026-02-24"},
             "web_engagement": {"total_views": 100, "total_visitors": 80, "top_essay": None},
             "distribution": {"tracked_views_ratio_pct": 0.0, "sources": {}, "campaigns": {}},
-            "github_activity": {"total_commits": 10, "total_prs": 2, "total_releases": 0,
-                                "organ_breakdown": {}},
+            "github_activity": {
+                "total_commits": 10,
+                "total_prs": 2,
+                "total_releases": 0,
+                "organ_breakdown": {},
+            },
             "alerts": [],
         }
         (inp / "engagement-metrics.json").write_text(json.dumps(engagement))

@@ -34,7 +34,7 @@ def sparkline_svg(values: list[int | float], width: int = 200, height: int = 40)
     return (
         f'<svg width="{width}" height="{height}" xmlns="http://www.w3.org/2000/svg">'
         f'<polyline points="{polyline}" fill="none" stroke="#0d47a1" stroke-width="2" />'
-        f'</svg>'
+        f"</svg>"
     )
 
 
@@ -74,7 +74,7 @@ def bar_chart_svg(
     return (
         f'<svg width="{width}" height="{total_height}" xmlns="http://www.w3.org/2000/svg">'
         + "".join(bars)
-        + '</svg>'
+        + "</svg>"
     )
 
 
@@ -95,11 +95,9 @@ def pages_table_html(pages: list[dict]) -> str:
         )
 
     return (
-        '<table><thead><tr>'
-        '<th>Title</th><th>Path</th><th>Views</th><th>Unique</th>'
-        '</tr></thead><tbody>'
-        + "".join(rows)
-        + '</tbody></table>'
+        "<table><thead><tr>"
+        "<th>Title</th><th>Path</th><th>Views</th><th>Unique</th>"
+        "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
     )
 
 
@@ -108,14 +106,20 @@ def attribution_table_html(sources: dict, campaigns: dict) -> str:
     if not sources and not campaigns:
         return '<p class="empty-notice">No UTM-tagged traffic captured in this period.</p>'
 
-    source_rows = "".join(
-        f"<tr><td>{source}</td><td class='num'>{views}</td></tr>"
-        for source, views in sources.items()
-    ) or "<tr><td colspan='2'>No source data</td></tr>"
-    campaign_rows = "".join(
-        f"<tr><td>{campaign}</td><td class='num'>{views}</td></tr>"
-        for campaign, views in campaigns.items()
-    ) or "<tr><td colspan='2'>No campaign data</td></tr>"
+    source_rows = (
+        "".join(
+            f"<tr><td>{source}</td><td class='num'>{views}</td></tr>"
+            for source, views in sources.items()
+        )
+        or "<tr><td colspan='2'>No source data</td></tr>"
+    )
+    campaign_rows = (
+        "".join(
+            f"<tr><td>{campaign}</td><td class='num'>{views}</td></tr>"
+            for campaign, views in campaigns.items()
+        )
+        or "<tr><td colspan='2'>No campaign data</td></tr>"
+    )
 
     return (
         "<div class='cards'>"
@@ -157,7 +161,25 @@ def alerts_html(alerts: list[dict]) -> str:
         severity = a.get("severity", "info")
         desc = a.get("description", a.get("rule", ""))
         items.append(f'<li class="alert-{severity}">{desc}</li>')
-    return '<ul class="alerts">' + "".join(items) + '</ul>'
+    return '<ul class="alerts">' + "".join(items) + "</ul>"
+
+
+def referrers_table_html(referrers: list[dict]) -> str:
+    """Generate an HTML table of referrer metrics."""
+    if not referrers:
+        return '<p class="empty-notice">No referrer data available.</p>'
+
+    rows = []
+    for r in sorted(referrers, key=lambda x: x.get("count", 0), reverse=True):
+        name = r.get("name", "Unknown")
+        count = r.get("count", 0)
+        rows.append(f"<tr><td>{name}</td><td class='num'>{count}</td></tr>")
+
+    return (
+        "<table><thead><tr>"
+        "<th>Referrer</th><th>Views</th>"
+        "</tr></thead><tbody>" + "".join(rows) + "</tbody></table>"
+    )
 
 
 def render_dashboard(engagement: dict, report: dict) -> str:
@@ -165,6 +187,7 @@ def render_dashboard(engagement: dict, report: dict) -> str:
     period = engagement.get("period", {})
     totals = engagement.get("site_totals", {})
     pages = engagement.get("pages", [])
+    referrers = engagement.get("referrers", [])
     trends = engagement.get("trends", {})
     gh = report.get("github_activity", {})
     dist = report.get("distribution", {})
@@ -252,6 +275,11 @@ def render_dashboard(engagement: dict, report: dict) -> str:
 </section>
 
 <section>
+  <h2>Top Referrers</h2>
+  {referrers_table_html(referrers)}
+</section>
+
+<section>
   <h2>Commits by Organ</h2>
   {bar_chart_svg(organ_labels, organ_commits)}
 </section>
@@ -294,6 +322,7 @@ def generate_dashboard(input_dir: str, output_dir: str) -> str:
             "period": {},
             "site_totals": {"page_views": 0, "unique_visitors": 0, "referrer_count": 0},
             "pages": [],
+            "referrers": [],
             "trends": {"views_delta_pct": None, "visitors_delta_pct": None},
         }
 
@@ -305,8 +334,12 @@ def generate_dashboard(input_dir: str, output_dir: str) -> str:
             "period": {},
             "web_engagement": {"total_views": 0, "total_visitors": 0, "top_essay": None},
             "distribution": {"tracked_views_ratio_pct": 0.0, "sources": {}, "campaigns": {}},
-            "github_activity": {"total_commits": 0, "total_prs": 0, "total_releases": 0,
-                                "organ_breakdown": {}},
+            "github_activity": {
+                "total_commits": 0,
+                "total_prs": 0,
+                "total_releases": 0,
+                "organ_breakdown": {},
+            },
             "alerts": [],
         }
 
@@ -317,9 +350,7 @@ def generate_dashboard(input_dir: str, output_dir: str) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Generate static HTML analytics dashboard"
-    )
+    parser = argparse.ArgumentParser(description="Generate static HTML analytics dashboard")
     parser.add_argument("--input", required=True, help="Input directory with aggregated JSON")
     parser.add_argument("--output", required=True, help="Output directory for dashboard HTML")
     args = parser.parse_args()

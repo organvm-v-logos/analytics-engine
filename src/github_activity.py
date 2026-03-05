@@ -147,8 +147,10 @@ def main():
     else:
         try:
             result = collect_activity(config, args.days)
-            print(f"Collected activity: {result['totals']['commits']} commits, "
-                  f"{result['totals']['prs']} PRs, {result['totals']['releases']} releases")
+            print(
+                f"Collected activity: {result['totals']['commits']} commits, "
+                f"{result['totals']['prs']} PRs, {result['totals']['releases']} releases"
+            )
         except (urllib.error.URLError, urllib.error.HTTPError) as e:
             print(f"GitHub API error: {e} — writing placeholder", file=sys.stderr)
             result = unconfigured_result(args.days)
