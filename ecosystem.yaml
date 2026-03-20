@@ -1,0 +1,18 @@
+schema_version: '1.0'
+repo: analytics-engine
+organ: V
+display_name: "Logos Analytics — Weekly engagement metrics collection and aggregation"
+
+delivery:
+- platform: python_library
+  status: in_progress
+  priority: high
+  notes: "Engagement metrics engine with weekly collection schedule"
+  next_action: "Complete metrics aggregation pipeline"
+
+content:
+- platform: docs_site
+  status: not_started
+  priority: medium
+  notes: "Metrics methodology, aggregation logic, report format"
+  next_action: "Document metrics collection and reporting"
