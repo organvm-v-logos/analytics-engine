@@ -52,7 +52,11 @@ class TestGithubMain:
         with patch("sys.argv", ["prog", "--output", str(output_dir)]):
             main()
 
-        assert (output_dir / "github-activity-2026-03-05.json").exists()
+        # main() uses date.today() for filename, not the mock's period.end
+        from datetime import date
+
+        expected = output_dir / f"github-activity-{date.today().isoformat()}.json"
+        assert expected.exists()
         mock_exit.assert_called_with(0)
 
 
